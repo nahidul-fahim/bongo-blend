@@ -1,6 +1,8 @@
 import { Inter } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner"
 import "./globals.css";
+import NavBar from "@/components/navbar/NavBar";
+
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -12,7 +14,8 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={`${inter.className} min-h-screen min-w-full flex justify-start items-start`}>
+        <NavBar />
         {children}
       </body>
       <Toaster />
