@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Upload } from "lucide-react";
-import { useState } from "react";
+import { Eye, EyeOff, Upload } from "lucide-react";
+import { useRef, useState } from "react";
 import { toast } from "sonner"
 import axios from 'axios';
 
@@ -20,6 +20,8 @@ const SignUp = () => {
     const [selectedImageName, setSelectedImageName] = useState('');
     const [selectedImage, setSelectedImage] = useState(null);
     const [error, setError] = useState(null);
+    const [showPassword, setShowPassword] = useState(false);
+    const signUpForm = useRef(null);
 
 
     // image input and get the file name
@@ -39,6 +41,62 @@ const SignUp = () => {
 
 
 
+    // handle sign up function
+    const handleSignUp = e => {
+        e.preventDefault();
+        const form = e.target;
+        // get data from the form
+        const name = form.name.value;
+        const email = form.email.value;
+        const userName = form.userName.value;
+        const password = form.password.value;
+        const userType = "user";
+
+        // password validation
+        if (password.length < 6) {
+            setError("Password must be at least 6 characters long")
+            return;
+        }
+
+        // if the profile image is selected, host the image
+        if (selectedImage) {
+            axios.post(imgUploadUrl, selectedImage, {
+                headers: {
+                    'content-type': 'multipart/form-data'
+                }
+            })
+                .then(res => {
+                    // if the image is hosted successfully, grab the data from form
+                    if (res.data) {
+                        const userImage = res.data.data.display_url;
+                        const newUserInfo = { name, email, userName, userImage, userType, password };
+
+                        // send the data to backend
+                        axios.post("/api/users/signUp", newUserInfo)
+                            .then(res => {
+                                const isSuccess = res.data.success;
+                                if (isSuccess) {
+                                    signUpForm.current.reset();
+                                    setError(null)
+                                    toast(res.data.message)
+                                    router.push("/signIn")
+                                }
+                                if (res.data.status === 400) {
+                                    setError(res.data.message)
+                                }
+                            })
+                            // error from backend
+                            .catch(err => toast(err.code));
+                    }
+                })
+                // image hosting error
+                .catch(err => toast(err.code));
+        }
+    };
+
+
+
+
     return (
         <div className="container mx-auto p-5 flex flex-col justify-center items-center min-h-screen relative">
 
@@ -48,7 +106,7 @@ const SignUp = () => {
                 <h1 className="text-2xl font-semibold text-foreground">Unlock a World of Connections!</h1>
 
                 {/* registration form */}
-                <form
+                <form onSubmit={handleSignUp} ref={signUpForm}
                     className="w-full flex flex-col justify-center items-center gap-5">
                     {/* Full name */}
                     <input required type="text" name="name" id="name" placeholder="Full name" className="border-[1px] px-4 py-2 rounded focus:outline-none focus:border-lightBlack w-2/3" />
@@ -60,7 +118,18 @@ const SignUp = () => {
                     <input required type="text" name="userName" id="userName" placeholder="User name" className="border-[1px] px-4 py-2 rounded focus:outline-none focus:border-lightBlack w-2/3" />
 
                     {/* Password */}
-                    <input required type="password" name="password" id="password" placeholder="Password" className="border-[1px] px-4 py-2 rounded focus:outline-none focus:border-lightBlack w-2/3" />
+
+
+                    <div className="border-[1px] rounded w-2/3 relative">
+                        <input required type={showPassword ? "text" : "password"} name="password" id="password" placeholder="Password" className="w-full px-4 py-2 focus:outline-none focus:border-lightBlack" />
+
+                        {/* functionality for hide or show password */}
+                        {
+                            showPassword ? <EyeOff onClick={() => setShowPassword(!showPassword)} size={18} className="absolute top-3 right-3 text-lightBlack" />
+                                :
+                                <Eye onClick={() => setShowPassword(!showPassword)} size={18} className="absolute top-3 right-3 text-lightBlack" />
+                        }
+                    </div>
 
                     {/* image file input */}
                     <label
