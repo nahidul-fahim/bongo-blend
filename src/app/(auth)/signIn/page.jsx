@@ -1,5 +1,6 @@
 "use client"
 
+import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -12,39 +13,49 @@ const SignIn = () => {
     // hooks
     const router = useRouter();
     const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(false);
 
     // handle sign in function
-    // const handleSignIn = async (e) => {
-    //     e.preventDefault();
+    const handleSignIn = async (e) => {
+        e.preventDefault();
         // get data from the form
-        // const form = e.target;
-        // const email = form.email.value;
-        // const password = form.password.value;
-        // const signInInfo = { email, password, redirect: false };
+        const form = e.target;
+        const email = form.email.value;
+        const password = form.password.value;
 
-        // const res = await signIn('credentials', signInInfo);
+        if (!email || !password) {
+            setError("Please provide all the credentials")
+        }
 
-        // if (res.error) {
-        //     return setError("Invalid credentials")
-        // }
+        try {
+            setLoading(true)
 
-        // toast("Sign in successful!")
-        // router.push("/")
+            const res = await signIn('credentials', {
+                email: email,
+                password: password,
+                redirect: false,
+                callbackUrl: process.env.NEXTAUTH_URL,
+            })
 
+            if (!res.ok) {
+                setError("Failed! Please try again.")
+            }
 
+            if (res.error) {
+                setError('Invalid credentials')
+                setLoading(false);
+                return
+            }
 
+            setLoading(false);
+            router.replace('/')
 
-        // axios.post("/api/users/signin", signInInfo)
-        //     .then(res => {
-        //         if (res.data.success) {
-        //             toast(res.data.message)
-        //             router.push("/")
-        //         }
-        //     })
-        //     .catch(err => {
-        //         console.log(err)
-        //     })
-    // };
+        } catch (error) {
+            setLoading(false)
+            setError(error)
+        }
+
+    };
 
 
 
@@ -57,7 +68,7 @@ const SignIn = () => {
                 <h1 className="text-2xl font-semibold text-foreground">Welcome Back!</h1>
 
                 {/* sign in form */}
-                <form
+                <form onSubmit={handleSignIn}
                     className="w-full flex flex-col justify-center items-center gap-5">
 
                     {/* Email */}
@@ -67,7 +78,7 @@ const SignIn = () => {
                     <input type="password" name="password" id="password" placeholder="Password" className="border-[1px] px-4 py-2 rounded focus:outline-none focus:border-lightBlack w-2/3" />
 
                     {/* Submit button */}
-                    <input type="submit" value={"Sign In"} className="bg-foreground text-background font-medium hover:bg-background hover:text-foreground duration-500 border-[1px] border-transparent px-4 py-2 rounded focus:outline-none hover:border-lightBlack cursor-pointer w-2/3" />
+                    <input disabled={loading === true} type="submit" value={"Sign In"} className="bg-foreground text-background font-medium hover:bg-background hover:text-foreground duration-500 border-[1px] border-transparent px-4 py-2 rounded focus:outline-none hover:border-lightBlack cursor-pointer w-2/3 disabled:bg-[#8b8b8b] disabled:cursor-not-allowed disabled:text-white disabled:border-[#ffffff00]" />
 
                     {/* Error message */}
                     <p className="text-left text-[red] text-[14px] font-medium">{error && error}</p>
