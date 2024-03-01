@@ -22,6 +22,7 @@ const SignUp = () => {
     const [error, setError] = useState(null);
     const [showPassword, setShowPassword] = useState(false);
     const signUpForm = useRef(null);
+    const [loading, setLoading] = useState(false);
 
 
     // image input and get the file name
@@ -57,6 +58,7 @@ const SignUp = () => {
             setError("Password must be at least 6 characters long")
             return;
         }
+        setLoading(true)
 
         // if the profile image is selected, host the image
         if (selectedImage) {
@@ -68,14 +70,16 @@ const SignUp = () => {
                 .then(res => {
                     // if the image is hosted successfully, grab the data from form
                     if (res.data) {
+                        setLoading(true)
                         const userImage = res.data.data.display_url;
                         const newUserInfo = { name, email, userName, userImage, userType, password };
 
                         // send the data to backend
-                        axios.post("/api/users/signUp", newUserInfo)
+                        axios.post("/api/auth/signUp", newUserInfo)
                             .then(res => {
                                 const isSuccess = res.data.success;
                                 if (isSuccess) {
+                                    setLoading(false);
                                     signUpForm.current.reset();
                                     setError(null)
                                     toast(res.data.message)
@@ -83,14 +87,17 @@ const SignUp = () => {
                                 }
                                 if (res.data.status === 400) {
                                     setError(res.data.message)
+                                    setLoading(false)
                                 }
                             })
                             // error from backend
                             .catch(err => toast(err.code));
+                        setLoading(false)
                     }
                 })
                 // image hosting error
                 .catch(err => toast(err.code));
+            setLoading(false)
         }
     };
 
@@ -138,6 +145,7 @@ const SignUp = () => {
                     >
                         <Upload /> {selectedImageName.length > 25 ? selectedImageName.slice(0, 25) + "...." : selectedImageName || "Choose your profile picture"}
                         <input
+                            required
                             type="file"
                             name="image"
                             id="image"
@@ -151,6 +159,11 @@ const SignUp = () => {
 
                     {/* Error message */}
                     <p className="text-left text-[red] text-[14px] font-medium">{error && error}</p>
+
+                    {/* loading message */}
+                    {
+                        loading && <p className="text-left text-[red] text-[14px] font-medium">Please wait..</p>
+                    }
                 </form>
 
                 <div className="flex justify-center items-center gap-2 text-lightBlack">
